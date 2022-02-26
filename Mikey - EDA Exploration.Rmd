@@ -1,0 +1,362 @@
+---
+title: "Mikey - EDA Exploration"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+```
+
+```{r}
+# Chunk for code set up... replace 'DATASETNAME' with whatever the dataset is named on your file.
+DATASETNAME <- read.csv(file="/Users/MikeyMuller/Desktop/Junior Year/Semester 1/STOR 320/Final Project/CurrentData/songfinal2.csv", header=TRUE, sep=",")
+
+allSongs <- DATASETNAME
+
+MODE.func = function(data){
+  
+  x = data$mode
+  
+  y = rep(NA,length(x))
+
+  for (i in seq_along(x)){
+    y[i] =  if(x[i]  %in% c(1)){
+                "Major"
+            }else{
+                "Minor"
+            }
+  }
+  return(factor(y))
+}
+
+KEY.func = function(data){
+  
+  x = data$key
+  
+  y = rep(NA,length(x))
+
+  for (i in seq_along(x)){
+    y[i] =  if(x[i]  %in% c(0)){
+                "C"
+            }else if(x[i]  %in% c(1)){
+              "C#"
+            }else if(x[i]  %in% c(2)){
+              "D"
+            }else if(x[i]  %in% c(3)){
+              "D#"
+            }else if(x[i]  %in% c(4)){
+              "E"
+            }else if(x[i]  %in% c(5)){
+              "F"
+            }else if(x[i]  %in% c(6)){
+              "F#"
+            }else if(x[i]  %in% c(7)){
+              "G"
+            }else if(x[i]  %in% c(8)){
+              "G#"
+            }else if(x[i]  %in% c(9)){
+              "A"
+            }else if(x[i]  %in% c(10)){
+              "A#"
+            }else{
+              "B"
+            }
+  }
+  return(factor(y))
+}
+
+allSongs2 <- allSongs %>%
+  select(-c(X)) %>%
+  arrange(year,month,day,week_pos)
+
+allSongs2$mode = MODE.func(allSongs2) 
+allSongs2$key = KEY.func(allSongs2)
+```
+
+
+```{r}
+ALLSONGS2 <- allSongs2
+ALLSONGS2$date <- as.Date( paste( ALLSONGS2$year, ALLSONGS2$month ,1, sep = "." ), format="%Y.%m.%d")
+ALLSONGS3 <- ALLSONGS2 %>%
+  group_by(date, mode) %>%
+  summarise(
+    n = n(),
+    duration_min = mean(duration_ms)/(60*1000),
+    tempo = mean(tempo)
+  )
+
+dates<- ALLSONGS3$date
+brks <- dates[c(TRUE, FALSE)][seq(1, length(ALLSONGS3$date), 12)]
+lbls <- lubridate::year(brks)
+
+ALLSONGS3
+```
+
+```{r}
+ggplot(ALLSONGS3, aes(x=date)) + 
+  geom_line(aes(y=duration_min,col=mode)) + 
+  labs(title="Billboards Top 100 Average Song Duration Over Time", 
+       subtitle="By month from 2000", 
+       y="Duration (min)", 
+       color=NULL) +  
+  scale_x_date(labels = lbls, breaks = brks) +  
+  scale_color_manual(labels = c("Major", "Minor"), 
+                     values = c("Major"="#00ba38", "Minor"="#f8766d")) +  # line color
+  theme(axis.text.x = element_text(angle = 90, vjust=0.5, size = 8),  # rotate x axis text
+        panel.grid.minor = element_blank())
+ggsave("songDuration2.png")
+```
+
+```{r}
+ALLSONGSBASE <-allSongs2
+ALLSONGSBASE$date <- as.Date( paste( ALLSONGS2$year, 1 ,1, sep = "." ), format="%Y.%m.%d")
+ALLSONGS4 <- ALLSONGSBASE %>%
+  group_by(date, GenreFix) %>%
+  summarise(
+    n = n(),
+    duration_min = mean(duration_ms)/(60*1000),
+    tempo = mean(tempo)
+  )
+
+genres = c("alternative/rock","country", "soul/jazz", "edm", "pop", "r%b", "hip hop/rap")
+genreColors = c("alternative/rock" = "#c42e29", "country" = "#e68632", "soul/jazz"="#e3c532", "edm"="#259c25","pop"="#84259c", "r%b"="#202cb3", "hip hop/rap"="#2ac9c9")
+
+genres = c("alternative/rock", "pop", "r%b", "hip hop/rap")
+genreColors = c("alternative/rock" = "#c42e29", "pop"="#84259c", "r%b"="#202cb3", "hip hop/rap"="#2ac9c9")
+
+ALLSONGS5 <- ALLSONGS4[ALLSONGS4$GenreFix %in% genres, ]
+
+dates<- unique(ALLSONGS5$date)
+brks <-  dates
+lbls <- lubridate::year(brks)
+brks
+```
+
+```{r}
+ggplot(ALLSONGS5, aes(x=date)) + 
+  geom_line(aes(y=duration_min,col=GenreFix)) + 
+  labs(title="Billboards Top 100 Songs Average Duration Over Time", 
+       subtitle="By genre from 2000", 
+       y="Duration (min)", 
+       color=NULL) +  
+  scale_x_date(labels = lbls, breaks = brks) +  
+  scale_color_manual(labels = genres, 
+                     values = genreColors) +  # line color
+  theme(axis.text.x = element_text(angle = 90, vjust=0.5, size = 8),  # rotate x axis text
+        panel.grid.minor = element_blank())
+ggsave("durationByGenre.png")
+```
+
+```{r}
+ALLSONGS6 <- ALLSONGSBASE %>%
+  group_by(date, mode) %>%
+  summarise(
+    n = n(),
+    duration_min = mean(duration_ms)/(60*1000),
+    weeks_on_chart = mean(weeks_on_chart)
+  )
+```
+
+```{r}
+ggplot(ALLSONGS6, aes(x=date)) + 
+  geom_line(aes(y=weeks_on_chart,col=mode)) + 
+  labs(title="Billboards Top 100 Songs Average Weeks on Chart Over Time", 
+       subtitle="By song mode from 2000", 
+       y="Number of Weeks", 
+       color=NULL) +  
+  scale_x_date(labels = lbls, breaks = brks) +  
+  scale_color_manual(labels = c("Major", "Minor"), 
+                     values = c("Major"="#00ba38", "Minor"="#f8766d")) +  # line color
+  theme(axis.text.x = element_text(angle = 90, vjust=0.5, size = 8),  # rotate x axis text
+        panel.grid.minor = element_blank())
+```
+```{r}
+ALLSONGS7 <- ALLSONGSBASE %>%
+  group_by(year, mode) %>%
+  summarise(
+    n = n(),
+    duration_min = mean(duration_ms)/(60*1000),
+    weeks_on_chart = mean(weeks_on_chart),
+    peak_pos = mean(peak_pos)
+  )
+
+ALLSONGS8 <- ALLSONGSBASE %>%
+  group_by(season, mode) %>%
+  summarise(
+    n = n(),
+    duration_min = mean(duration_ms)/(60*1000),
+    weeks_on_chart = mean(weeks_on_chart),
+    peak_pos = mean(peak_pos),
+    valence = mean(valence)
+  )
+
+ALLSONGS7
+```
+
+```{r}
+ggplot(ALLSONGS7, aes(fill = mode, y=peak_pos, x =year)) + 
+  geom_bar(position="dodge", stat="identity")
+
+ggplot(ALLSONGS8, aes(fill = mode, y=peak_pos, x =season)) + 
+  geom_bar(position="dodge", stat="identity")
+```
+
+```{r}
+ALLSONGS9 <- ALLSONGS2 %>%
+  group_by(date) %>%
+  summarise(
+    n = n(),
+    duration_min = mean(duration_ms)/(60*1000),
+    tempo = mean(tempo),
+    liveness = mean(liveness),
+    danceability = mean(danceability),
+    energy = mean(energy),
+    loudness = mean(loudness),
+    speechiness = mean(speechiness),
+    acousticness = mean(acousticness),
+    valence = mean(valence)
+  )
+
+dates<- ALLSONGS9$date
+brks <- dates[seq(1, length(ALLSONGS9$date), 12)]
+lbls <- lubridate::year(brks)
+```
+
+```{r}
+
+ggplot(ALLSONGS9, aes(x=date)) + 
+  geom_line(aes(y=energy),color='blue') + 
+  geom_line(aes(y=danceability),color='red') + 
+  #geom_line(aes(y=loudness,col='orange')) + 
+  geom_line(aes(y=speechiness),color='green') +
+  geom_line(aes(y=liveness),color='purple') + 
+  geom_line(aes(y=acousticness),color='brown') + 
+  labs(title="Top 100 Average Song Duration Over Time", 
+       subtitle="By month from 2000", 
+       y="Average Value", 
+       color=NULL) +  
+  theme(axis.text.x = element_text(angle = 90, vjust=0.5, size = 8),  # rotate x axis text
+        panel.grid.minor = element_blank())
+
+ggplot(ALLSONGS9, aes(x=date)) + 
+  geom_line(aes(y=tempo))
+
+ggplot(ALLSONGS9, aes(x=date)) + 
+  geom_line(aes(y=loudness))
+
+ggplot(ALLSONGS9, aes(x=date)) + 
+  geom_line(aes(y=valence))
+
+```
+
+```{r}
+
+ALLSONGS10<- ALLSONGSBASE %>%
+  group_by(date,season) %>%
+  summarise(
+    n = n(),
+    valence = mean(valence),
+    energy = mean(energy),
+    danceability = mean(danceability)
+  )
+
+dates<- unique(ALLSONGS10$date)
+brks <-  dates
+lbls <- lubridate::year(brks)
+
+ggplot(ALLSONGS10, aes(x=date)) + 
+  geom_line(aes(y=danceability,col=season)) + 
+  labs(title="Billboards Top 100 Songs Average Valence Over Time", 
+       subtitle="By season from 2000", 
+       y="Average Valence", 
+       color=NULL) +  
+  scale_x_date(labels = lbls, breaks = brks) +  
+  scale_color_manual(labels = c("Fall", "Spring", "Summer", "Winter"), 
+                     values = c("Fall"="blue", "Spring"="green", "Summer"="red", "Winter"="black")) +  # line color
+  theme(axis.text.x = element_text(angle = 90, vjust=0.5, size = 8),  # rotate x axis text
+        panel.grid.minor = element_blank())
+```
+
+```{r}
+UNIQUESONGS <- allSongs2 %>%
+  group_by(song,artist) %>%
+  summarise(
+    year = max(year),
+    peak_pos = min(peak_pos),
+    weeks_on_chart = max(weeks_on_chart),
+    energy = mean(energy),
+    danceability = mean(danceability),
+    valence = mean(valence),
+    tempo = mean(tempo),
+    duration_min = mean(duration_ms)/(60*1000)
+  )
+
+TOP1SONGS <- UNIQUESONGS %>%
+  filter(peak_pos == 1)
+
+TOP1STATS <- TOP1SONGS %>%
+  group_by(year) %>%
+  summarize(
+    weeks_on_chart = max(weeks_on_chart),
+    energy = mean(energy),
+    danceability = mean(danceability),
+    valence = mean(valence),
+    tempo = mean(tempo),
+    duration_min = mean(duration_min)
+  )
+
+TOP99SONGS <- UNIQUESONGS %>%
+  filter(peak_pos != 1) 
+
+TOP99STATS <- TOP99SONGS %>%
+    group_by(year) %>%
+  summarize(
+    weeks_on_chart = max(weeks_on_chart),
+    energy = mean(energy),
+    danceability = mean(danceability),
+    valence = mean(valence),
+    tempo = mean(tempo),
+    duration_min = mean(duration_min)
+  )
+
+TOP1SONGS
+print(mean(TOP1SONGS$energy))
+print(mean(TOP99SONGS$energy))
+print(mean(TOP1SONGS$valence))
+print(mean(TOP99SONGS$valence))
+
+ggplot()+
+  geom_point(data = TOP1STATS, aes(x=year, y=energy), color ="blue") +
+      geom_smooth(data = TOP1STATS, aes(x=year, y=energy), method=lm)+
+  geom_point(data = TOP99STATS, aes(x=year, y=energy), color ="red")+
+      geom_smooth(data = TOP99STATS, aes(x=year, y=energy), method=lm,color="red")
+
+ggplot()+
+  geom_point(data = TOP1STATS, aes(x=year, y=tempo), color ="blue") +
+      geom_smooth(data = TOP1STATS, aes(x=year, y=tempo), method=lm)+
+  geom_point(data = TOP99STATS, aes(x=year, y=tempo), color ="red") +
+      geom_smooth(data = TOP99STATS, aes(x=year, y=tempo), method=lm,color="red")
+  
+ggplot()+
+  geom_point(data = TOP1STATS, aes(x=year, y=duration_min), color ="blue") +
+    geom_smooth(data = TOP1STATS, aes(x=year, y=duration_min), method=lm)+
+  geom_point(data = TOP99STATS, aes(x=year, y=duration_min), color ="red") +
+    geom_smooth(data = TOP99STATS, aes(x=year, y=duration_min), method=lm,color="red")
+
+ggplot()+
+  geom_point(data = TOP1STATS, aes(x=year, y=valence), color ="blue") + 
+  geom_smooth(data = TOP1STATS, aes(x=year, y=valence), method=lm)+
+  geom_point(data = TOP99STATS, aes(x=year, y=valence), color ="red")+
+  geom_smooth(data = TOP99STATS, aes(x=year, y=valence), method=lm,color="red")
+
+ggplot(,aes(x=year, y = weeks_on_chart))+
+  geom_point(data = TOP1STATS, color ="blue") + 
+  geom_smooth(data = TOP1STATS, method=lm)+
+  geom_point(data = TOP99STATS, color ="red")+
+  geom_smooth(data = TOP99STATS,  method=lm,color="red")
+```
+  

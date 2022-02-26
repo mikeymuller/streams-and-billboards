@@ -1,0 +1,89 @@
+---
+title: 'Mikey - Initial Questions'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+```
+
+```{r}
+# Chunk for code set up... replace 'DATASETNAME' with whatever the dataset is named on your file.
+DATASETNAME <- read.csv(file="/Users/MikeyMuller/Desktop/Junior Year/Semester 1/STOR 320/Final Project/CurrentData/songfinal2.csv", header=TRUE, sep=",")
+
+allSongs <- DATASETNAME
+
+MODE.func = function(data){
+  
+  x = data$mode
+  
+  y = rep(NA,length(x))
+
+  for (i in seq_along(x)){
+    y[i] =  if(x[i]  %in% c(1)){
+                "Major"
+            }else{
+                "Minor"
+            }
+  }
+  return(factor(y))
+}
+
+KEY.func = function(data){
+  
+  x = data$key
+  
+  y = rep(NA,length(x))
+
+  for (i in seq_along(x)){
+    y[i] =  if(x[i]  %in% c(0)){
+                "C"
+            }else if(x[i]  %in% c(1)){
+              "C#"
+            }else if(x[i]  %in% c(2)){
+              "D"
+            }else if(x[i]  %in% c(3)){
+              "D#"
+            }else if(x[i]  %in% c(4)){
+              "E"
+            }else if(x[i]  %in% c(5)){
+              "F"
+            }else if(x[i]  %in% c(6)){
+              "F#"
+            }else if(x[i]  %in% c(7)){
+              "G"
+            }else if(x[i]  %in% c(8)){
+              "G#"
+            }else if(x[i]  %in% c(9)){
+              "A"
+            }else if(x[i]  %in% c(10)){
+              "A#"
+            }else{
+              "B"
+            }
+  }
+  return(factor(y))
+}
+
+allSongs2 <- allSongs %>%
+  select(-c(X)) %>%
+  arrange(year,month,day,week_pos)
+
+allSongs2$mode = MODE.func(allSongs2) 
+allSongs2$key = KEY.func(allSongs2)
+```
+
+```{r}
+# Chunk for first graph
+ggplot(data = allSongs2) +
+  geom_bar(aes(x=key,fill = mode))
+```
+
+```{r}
+# Chunk for second graph
+ggplot(data = UNIQUESONGS, aes(x=duration_ms/(60*1000),y=weeks_on_chart)) +
+  geom_point(aes(col = mode))
+```

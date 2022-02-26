@@ -1,0 +1,169 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+```
+
+```{r, echo=F}
+# Chunk for code set up... replace 'DATASETNAME' with whatever the dataset is named on your file.
+DATASETNAME <- read.csv(file="/Users/MikeyMuller/Desktop/Junior Year/Semester 1/STOR 320/Final Project/CurrentData/songsWithGenre.csv", header=TRUE, sep=",")
+
+allSongs <- DATASETNAME
+
+MODE.func = function(data){
+  
+  x = data$mode
+  
+  y = rep(NA,length(x))
+
+  for (i in seq_along(x)){
+    y[i] =  if(x[i]  %in% c(1)){
+                "Major"
+            }else{
+                "Minor"
+            }
+  }
+  return(factor(y))
+}
+
+KEY.func = function(data){
+  
+  x = data$key
+  
+  y = rep(NA,length(x))
+
+  for (i in seq_along(x)){
+    y[i] =  if(x[i]  %in% c(0)){
+                "C"
+            }else if(x[i]  %in% c(1)){
+              "C#"
+            }else if(x[i]  %in% c(2)){
+              "D"
+            }else if(x[i]  %in% c(3)){
+              "D#"
+            }else if(x[i]  %in% c(4)){
+              "E"
+            }else if(x[i]  %in% c(5)){
+              "F"
+            }else if(x[i]  %in% c(6)){
+              "F#"
+            }else if(x[i]  %in% c(7)){
+              "G"
+            }else if(x[i]  %in% c(8)){
+              "G#"
+            }else if(x[i]  %in% c(9)){
+              "A"
+            }else if(x[i]  %in% c(10)){
+              "A#"
+            }else{
+              "B"
+            }
+  }
+  return(factor(y))
+}
+
+allSongs2 <- allSongs %>%
+  select(-c(X)) %>%
+  arrange(year,month,day,week_pos) %>%
+  mutate(GenreFix = fct_lump(GenreFix, n = 6) %>% fct_infreq() %>% fct_rev()) %>%
+  filter(!is.na(GenreFix))
+  
+
+allSongs2$mode = MODE.func(allSongs2) 
+allSongs2$key = KEY.func(allSongs2)
+
+uniqueSongs <- allSongs2 %>%
+  group_by(song, artist, songID,GenreFix, key, mode) %>%
+  summarise(
+    year = min(year),
+    peak_pos = min(peak_pos),
+    weeks_on_chart = max(weeks_on_chart),
+    danceability = max(danceability),
+    energy = max(energy),
+    loudness = max(loudness),
+    speechiness = max(speechiness),
+    acousticness = max(acousticness),
+    instrumentalness = max(instrumentalness),
+    liveness = max(liveness),
+    valence = max(valence),
+    tempo = max(tempo),
+    duration = max(duration_ms)/(60*1000)
+  ) %>%
+  arrange(year, peak_pos) %>%
+  select(year, everything())
+```
+
+```{r, echo=F}
+TSwiftAll <- allSongs2 %>%
+  filter(artist == "Taylor Swift" & song == "Gorgeous") %>%
+  select(week, song, artist, week_pos, GenreFix, peak_pos, weeks_on_chart, energy, danceability) %>%
+  rename(genre = GenreFix)
+
+TSwiftUnique <- TSwiftAll %>%
+  group_by(song, artist, genre) %>%
+  summarise(
+    peak_pos = min(peak_pos),
+    weeks_on_chart = max(weeks_on_chart),
+    danceability = max(danceability),
+    energy = max(energy)
+  ) %>%
+  data.frame()
+
+```
+
+```{r, echo=F}
+## TABLE THAT DESCRIBES VARIABLES 
+
+vars <- matrix(0, ncol = 3, nrow = 9) %>%
+  data.frame() %>%
+  rename(Variable = X1, Source = X2, Description = X3)
+vars[1, ] <- list("Song", "Data.World (Billboard)", "Song name")
+vars[2, ] <- list("Artist","Data.World (Billboard)", "Artist name.")
+vars[3, ] <- list("Week", "Data.World (Billboard)","Date for the week that song was recorded on Billboard top 100.")
+vars[4, ] <- list("Week Position", "Data.World (Billboard)", "Position on chart for current week. ")
+vars[5, ] <- list("Peak Position", "Data.World (Billboard)", "Highest position the track reached on the chart (over full 19 years)")
+vars[6, ] <- list("Weeks on Chart", "Data.World (Billboard)", "The total number of weeks the song has been on the charts up to this week in time.")
+vars[7, ] <- list("Genre", "Spotify", "The category of song (pop, rap, country)")
+vars[8, ] <- list("Duration", "Spotify", "The length of the song")
+vars[9, ] <- list("Other Audio Features (multiple variables)", "Spotify", "Spotify’s numerical measurement of subjective song attributes such as energy, acousticness, danceability, etc. You can read in detail about the description of each audio feature, along with the values each variable takes, here.")
+```
+
+```{r, echo=F}
+## CODE TO MAKE TSWIFT EXAMPLE TABLES PRETTY
+TSwiftAll
+TSwiftUnique
+```
+
+
+```{r, echo=F}
+## CODE TO MAKE VARS TABLE PRETTY
+
+vars
+```
+
+```{r, echo=F}
+## GRAPH OF GENRE DISTRIBUTION 
+uniqueSongs$Top10Song <- character(nrow(uniqueSongs))
+uniqueSongs$Top10Song[uniqueSongs$peak_pos <= 10] <- "Yes"
+uniqueSongs$Top10Song[uniqueSongs$peak_pos > 10] <- "No"
+uniqueSongs$Top10Song <- as.factor(uniqueSongs$Top10Song)
+uniqueSongs <- uniqueSongs %>% mutate(Top10Song = Top10Song %>%fct_rev())
+g <- ggplot(uniqueSongs, aes(GenreFix))
+g + geom_bar(aes(fill=Top10Song), width = 0.5) + 
+  theme(axis.text.x = element_text(angle=65, vjust=0.6)) +
+  labs(title="Distribution of Genres Across Songs in Billboard Top 100", 
+       subtitle="Years 2000 - 2019") +
+  xlab("Genre") +
+  ylab("Count")
+
+```
+
+
+

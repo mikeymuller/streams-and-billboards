@@ -1,0 +1,149 @@
+---
+title: "Web Scrape Billboard 100"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(rvest) 
+library(tidyr)
+library(dplyr)
+library(tidyverse)
+```
+
+```{r}
+URL.VIOLENT="https://www.billboard.com/charts/hot-100/2000-01-22"
+VIOLENT = URL.VIOLENT %>%
+  read_html() %>%
+  html_nodes(css='.chart-element__information__song') %>%
+  html_text()
+
+str(VIOLENT)
+```
+
+```{r}
+DATA <- read_csv("/Users/MikeyMuller/Downloads/Hot Stuff.csv")
+
+DATA
+```
+
+```{r}
+
+DATA$WeekID = as.Date(DATA$WeekID, format = "%m/%d/%Y")
+
+DATA2 <- DATA %>%
+    mutate(year = as.numeric(format(WeekID,"%Y")), month = as.numeric(format(WeekID,"%m")), day = as.numeric(format(WeekID,"%d"))) %>%
+  select(year, month, day, everything()) %>%
+  select(-url, url) %>%
+  rename(week = WeekID, artist = Performer, week_pos = `Week Position`, song = Song, songID = SongID, instance = Instance, previous_week_pos = `Previous Week Position`, peak_pos = `Peak Position`, prev_week_pos = `Previous Week Position`, peak_pos = `Peak Position`, weeks_on_chart = `Weeks on Chart`)
+
+
+DATA2
+```
+
+```{r}
+DATA3 <- DATA2 %>%
+  filter(year >= 2000) %>%
+  arrange(year, month, day, week_pos)
+
+DATA3
+```
+
+```{r}
+DATA4 <- DATA3 %>%
+  select(song, artist, songID, weeks_on_chart, peak_pos, instance, year, month, day, week) %>%
+  group_by(song, artist) %>%
+  summarise(
+    peak_pos = max(peak_pos),
+    weeks_on_chart = max(weeks_on_chart),
+    instance = max(instance),
+    year = max(year)
+  ) %>%
+  ungroup() %>%
+  select(year, everything())
+
+DATA4
+```
+
+```{r}
+DATA4 <- read.csv("/Users/MikeyMuller/Desktop/Junior Year/Semester 1/STOR 320/Final Project/DataSet/UniqueSongs.csv")
+```
+
+```{r}
+DATA3 <- read.csv("/Users/MikeyMuller/Desktop/Junior Year/Semester 1/STOR 320/Final Project/DataSet/BillboardData.csv", colClass= c("song"="character","artist"="character","songID" ="character"))
+
+```
+
+
+```{r}
+FEATUREDATA <- read_csv("/Users/MikeyMuller/Desktop/Junior Year/Semester 1/STOR 320/Final Project/DataSet/unique_songs_with_data.csv")
+```
+````{r}
+DATA3
+```
+
+```{r}
+SEASON.func = function(data){
+  
+  x = data$month
+  
+  y = rep(NA,length(x))
+
+  for (i in seq_along(x)){
+    y[i] =  if(x[i] %in% c(1,2,12)){
+                "Winter"
+            }else if(x[i] %in% c(3,4,5)){
+                "Spring"
+            }else if(x[i] %in% c(6,7,8)){
+                "Summer"
+            }else{
+                "Fall"
+            }
+  }
+  
+  return(y)
+  }
+
+DATA5 <- DATA3 %>% 
+  rename(billboard_url = url) %>%
+  mutate(season = NA) %>%
+  select(year, month, day, season, everything()) %>%
+  select(-c(X))
+
+DATA5$season = SEASON.func(DATA5)
+DATA5
+```
+
+```{r}
+FEATUREDATA2 <- FEATUREDATA %>%
+  select(-c(X1, `Unnamed: 0`, `Unnamed: 0.1`))
+
+
+FEATUREDATA2
+DATA5
+```
+```{r}
+DATA6 <- DATA5
+DATA6$artist <- gsub("'","",DATA6$artist)
+DATA6$song <- gsub("'","",DATA6$song)
+```
+
+```{r}
+filter(DATA6, artist == "Joe Diffie")
+```
+
+```{r}
+ALLSONGS <- left_join(DATA6, FEATUREDATA2, by=c("song" = "song", "artist" = "artist")) %>%
+  rename(year = year.x, instance = instance.x, peak_pos = peak_pos.x, weeks_on_chart = weeks_on_chart.x) %>%
+  select(-c(year.y,peak_pos.y,weeks_on_chart.y, id,type)) %>%
+  select(year,month,day,season,week,week_pos,song,artist,genre,everything()) %>%
+  select(-c(uri,track_href,analysis_url),everything())
+
+ALLSONGS
+```
+```{r}
+write.csv(ALLSONGS, "/Users/MikeyMuller/Desktop/Junior Year/Semester 1/STOR 320/Final Project/DataSet/AllSongData.csv")
+```
+```{r}
+write.csv(FEATUREDATA2, "/Users/MikeyMuller/Desktop/Junior Year/Semester 1/STOR 320/Final Project/CurrentData/UniqueSongData.csv")
+```

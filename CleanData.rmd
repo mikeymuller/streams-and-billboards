@@ -1,0 +1,34 @@
+---
+title: "Data Clean Up"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyr)
+library(dplyr)
+library(tidyverse)
+```
+
+```{r}
+DATA <- read_csv("/Users/MikeyMuller/Desktop/Junior Year/Semester 1/STOR 320/Final Project/cleanfinal.csv")
+
+```
+
+
+
+```{r}
+DATA2 <- DATA %>%
+  select(-c(X1)) %>%
+  mutate(year = as.numeric(format(date,"%Y")), month = as.numeric(format(date,"%m")), day = as.numeric(format(date,"%d"))) %>%
+  select(year, month, day, rank,everything()) %>%
+  arrange(desc(year),desc(month), desc(day), rank)
+  
+
+DATA2
+```
+
+
+```{r}
+filter(DATA2, title=="Hymn For The Weekend")
+```

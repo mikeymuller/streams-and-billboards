@@ -1,0 +1,50 @@
+
+.well{
+	padding-bottom: 5px;
+	padding-top: 5px;
+}
+
+.h1, .h2, .h3, h1, h2, h3 {
+    margin-top: 5px;
+    margin-bottom: 10px;
+}
+
+.irs-bar, .irs-bar-edge, .irs-from, .irs-to, .irs-single{
+
+    background: #1DB954;
+}
+.irs-bar{
+
+	border-top: 1px solid #1DB954;
+    border-bottom: 1px solid #1DB954;
+}
+
+.navbar-default {
+	background-color: black;
+    color: #1DB954;
+    text-transform: bold;
+
+}
+
+.navbar-default .navbar-brand{
+	background-color: black;
+    color: #1DB954;
+    text-transform: bold;
+    font-weight: bold;
+}
+
+.navbar-default .navbar-nav>li>a{
+    color: grey;
+
+}
+
+.navbar-default .navbar-nav>li>a:focus, .navbar-default .navbar-nav>li>a:hover {
+    background-color: black;
+    color: #1DB954;
+}
+
+.navbar-default .navbar-nav>.active>a, .navbar-default .navbar-nav>.active>a:focus, .navbar-default .navbar-nav>.active>a:hover{
+	background-color: black;
+    color: #1DB954;
+    font-weight: bold;
+}
