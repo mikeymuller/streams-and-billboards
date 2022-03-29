@@ -1,6 +1,6 @@
 # streams-and-billboards
 Machine learning music project integrating Billboard's top 100 songs with Spotify API
 
-Predicts optimal music attributes for most popular songs through random forest, linear regression, and logistic regression methedologies
+Uses Spotify song attributes to attempt to predict Billboard's top songs through random forest, linear regression, and logistic regression methedologies. [Full report found here.](https://htmlpreview.github.io/?https://github.com/mikeymuller/streams-and-billboards/blob/main/Report.html)
 
-Include Rshiny application for data visualizations 
+Includes custom built [R-shiny application](https://mikeymuller.shinyapps.io/ShinyApp/) for data visualizations and data exploration.
